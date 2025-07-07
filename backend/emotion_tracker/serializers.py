@@ -111,11 +111,13 @@ class CollaboratorSerializer(serializers.ModelSerializer):
 
 class EmotionTypeSerializer(serializers.ModelSerializer):
     usage_count = serializers.SerializerMethodField()
+    emotion_category = serializers.CharField(source='get_emotion_category', read_only=True)
+    intensity_level = serializers.CharField(source='get_intensity_level', read_only=True)
     
     class Meta:
         model = EmotionType
-        fields = ['id', 'name', 'emotion', 'degree', 'emotions', 'usage_count', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id', 'name', 'emotion', 'degree', 'emotions', 'emotion_category', 'intensity_level', 'usage_count', 'created_at']
+        read_only_fields = ['id', 'created_at', 'emotion_category', 'intensity_level']
     
     def get_usage_count(self, obj):
         return obj.emotion_entries.count()
@@ -125,12 +127,13 @@ class EmotionSerializer(serializers.ModelSerializer):
     collaborator_name = serializers.CharField(source='collaborator.full_name', read_only=True)
     emotion_type_name = serializers.CharField(source='emotion_type.name', read_only=True)
     emotion_type_degree = serializers.IntegerField(source='emotion_type.degree', read_only=True)
+    emotion_category = serializers.CharField(source='emotion_type.get_emotion_category', read_only=True)
     
     class Meta:
         model = Emotion
         fields = [
             'id', 'emotion_id', 'collaborator', 'collaborator_name',
-            'emotion_type', 'emotion_type_name', 'emotion_type_degree',
+            'emotion_type', 'emotion_type_name', 'emotion_type_degree', 'emotion_category',
             'date', 'period', 'week_number', 'month', 'year',
             'team', 'company', 'cluster', 'full_name',
             'emotion_degree', 'comment', 'half_day',
@@ -139,7 +142,8 @@ class EmotionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'emotion_id', 'week_number', 'month', 'year',
-            'team', 'company', 'cluster', 'full_name', 'creation_date'
+            'team', 'company', 'cluster', 'full_name', 'creation_date',
+            'emotion_degree'  # Maintenant en lecture seule car calculé automatiquement
         ]
 
 
@@ -148,7 +152,8 @@ class EmotionCreateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Emotion
-        fields = ['collaborator', 'emotion_type', 'date', 'period', 'emotion_degree', 'comment']
+        fields = ['collaborator', 'emotion_type', 'date', 'period', 'comment']
+        # Retirer emotion_degree des champs car il sera calculé automatiquement
     
     def validate(self, data):
         # Vérifier qu'il n'y a pas déjà une émotion pour cette période
@@ -168,6 +173,10 @@ class EmotionCreateSerializer(serializers.ModelSerializer):
             )
         
         return data
+    
+    def create(self, validated_data):
+        # L'emotion_degree sera automatiquement assigné dans la méthode save() du modèle
+        return super().create(validated_data)
 
 
 class EmotionTrendSerializer(serializers.ModelSerializer):

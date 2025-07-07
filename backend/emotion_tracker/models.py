@@ -106,8 +106,8 @@ class Collaborator(AbstractUser):
     emotion_today_evening = models.CharField(max_length=50, null=True, blank=True)
     emotion_this_week = models.CharField(max_length=50, null=True, blank=True)
     emotion_this_month = models.CharField(max_length=50, null=True, blank=True)
-    emotion_degree_this_week = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(10)])
-    emotion_degree_this_month = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(10)])
+    emotion_degree_this_week = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(-10), MaxValueValidator(10)])
+    emotion_degree_this_month = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(-10), MaxValueValidator(10)])
     
     # Métadonnées
     is_active = models.BooleanField(default=True)
@@ -300,7 +300,7 @@ class Emotion(models.Model):
     # Données calculées et insights
     weekly_emotion_summary = models.TextField(blank=True, verbose_name="Résumé émotionnel hebdomadaire")
     monthly_emotion_insights = models.TextField(blank=True, verbose_name="Insights émotionnels mensuels")
-    emotion_degree = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(10)], verbose_name="Degré d'émotion")
+    emotion_degree = models.IntegerField(validators=[MinValueValidator(-10), MaxValueValidator(10)], verbose_name="Degré d'émotion")
     
     # Champs additionnels
     creation_date = models.DateTimeField(auto_now_add=True)
@@ -526,6 +526,10 @@ class Emotion(models.Model):
                 self.company = self.collaborator.company.name
             if self.collaborator.cluster:
                 self.cluster = self.collaborator.cluster.name
+        
+        # MODIFICATION PRINCIPALE: Assigner automatiquement le degré de l'EmotionType
+        if self.emotion_type:
+            self.emotion_degree = self.emotion_type.degree
         
         # Calculer les champs automatiques
         self.date_period = self.calculate_date_period()
